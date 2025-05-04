@@ -1,103 +1,158 @@
-import Image from "next/image";
+"use client";
+
+import { useState, useEffect } from "react";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [email, setEmail] = useState("");
+  const [users, setUsers] = useState<any[]>([]);
+  const [message, setMessage] = useState("");
+  const [tierMap, setTierMap] = useState<Record<string, string>>({});
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+  useEffect(() => {
+    const fetchAllUsers = async () => {
+      try {
+        const res = await fetch("/api/user");
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.error("Error:", errorText);
+          setMessage(`❌ ${errorText || "Failed to fetch users."}`);
+        } else {
+          const data = await res.json();
+          setUsers(data.users || []);
+        }
+      } catch (err) {
+        console.error(err);
+        setMessage("❌ Failed to fetch users.");
+      }
+    };
+
+    fetchAllUsers();
+  }, []);
+
+  const searchUser = async () => {
+    setMessage("");
+    try {
+      const res = await fetch(`/api/user?email=${encodeURIComponent(email)}`);
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error("Error:", errorText);
+        setMessage(`❌ ${errorText || "User not found."}`);
+        setUsers([]);
+      } else {
+        const data = await res.json();
+        setUsers([data.user]);
+      }
+    } catch (err) {
+      console.error(err);
+      setMessage("❌ Failed to fetch user.");
+    }
+  };
+
+  const upgradeUser = async (userId: string, tier: string) => {
+    const messagesToAdd = tier === "bronze" ? 10 : tier === "silver" ? 50 : 100;
+    const confirm = window.confirm(
+      `Are you sure you want to upgrade the user to '${tier}' tier and add +${messagesToAdd} messages?`
+    );
+    if (!confirm) return;
+
+    try {
+      const res = await fetch("/api/user/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, messagesToAdd }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setMessage(`❌ ${data.error || "Failed to upgrade user."}`);
+      } else {
+        setMessage(`✅ ${data.message}`);
+      }
+    } catch (err) {
+      console.error(err);
+      setMessage("❌ Upgrade failed.");
+    }
+  };
+
+  return (
+    <main className="min-h-screen flex items-center justify-center bg-gradient-to-tr from-blue-100 to-violet-200 px-4">
+      <div className="bg-white/80 backdrop-blur-md p-8 rounded-2xl shadow-lg w-full max-w-xl space-y-6">
+        <h1 className="text-3xl font-bold text-center text-black">🔧 Admin Panel</h1>
+
+        <div className="space-y-4 text-black">
+          <input
+            type="email"
+            placeholder="Enter user email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+          <button
+            onClick={searchUser}
+            className="w-full bg-indigo-600 text-white font-medium py-3 rounded-lg hover:bg-indigo-700 transition"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+            🔍 Search User
+          </button>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+
+        {message && (
+          <div className="text-center text-sm text-indigo-700 font-medium">
+            {message}
+          </div>
+        )}
+
+        <div className="mt-6 space-y-4">
+          {users.map((user) => (
+            <div
+              key={user.id}
+              className="p-4 rounded-lg border text-black bg-white/90 shadow-md space-y-2"
+            >
+              <h2 className="text-lg font-semibold">👤 {user.name}</h2>
+              <p>
+                <strong>Email:</strong> {user.email}
+              </p>
+              <p>
+                <strong>Current Tier:</strong> {user.tier}
+              </p>
+              <p>
+                <strong>API Requests Remaining:</strong> {user.messagesLeft}
+              </p>
+
+              <div className="flex gap-2 flex-wrap">
+                {[
+                  { tier: "bronze", messages: 10 },
+                  { tier: "silver", messages: 50 },
+                  { tier: "gold", messages: 100 },
+                ].map(({ tier, messages }) => (
+                  <button
+                    key={tier}
+                    onClick={() =>
+                      setTierMap((prev) => ({ ...prev, [user.id]: tier }))
+                    }
+                    className={`px-4 py-1 rounded-full text-sm font-medium ${
+                      tierMap[user.id] === tier
+                        ? "bg-indigo-600 text-white"
+                        : "bg-gray-200 text-gray-800"
+                    }`}
+                  >
+                    {tier} (+{messages})
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={() =>
+                  upgradeUser(user.id, tierMap[user.id] || "bronze")
+                }
+                className="mt-2 w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition"
+              >
+                🚀 Confirm Upgrade
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    </main>
   );
 }
