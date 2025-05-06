@@ -1,37 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/authOptions';
 import { prisma } from '@/lib/prisma';
+import { allowedEmails } from "@/lib/constants";
 
 export async function GET(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  
+
+  if (!session || !allowedEmails.includes(session.user?.email || "")) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { searchParams } = new URL(req.url);
   const email = searchParams.get('email');
 
-  console.log("Received request for email:", email);
-
-  if (!email) {
-    try {
-      const allUsers = await prisma.user.findMany();
-      console.log('Fetched all users:', allUsers);
-      return NextResponse.json({ users: allUsers });
-    } catch (error) {
-      console.error('Error fetching all users:', error);
-      return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });
-    }
-  }
-
   try {
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
+    if (!email) {
+      const allUsers = await prisma.user.findMany();
+      return NextResponse.json({ users: allUsers });
+    }
+
+    const user = await prisma.user.findUnique({ where: { email } });
 
     if (!user) {
-      console.log('User not found:', email);
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    console.log('User found:', user);
     return NextResponse.json({ user });
   } catch (error) {
-    console.error('Error fetching user:', error);
+    console.error('Error fetching users:', error);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }

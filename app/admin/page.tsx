@@ -1,19 +1,17 @@
+// app/admin/page.tsx
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
-import AdminPanel from "./components/AdminPanel";
 import { redirect } from "next/navigation";
+import AdminPanel from "../components/AdminPanel"; // ✅ import the component
 import { allowedEmails } from "@/lib/constants";
 
-
-export default async function ProtectedPage() {
+export default async function AdminPage() {
   const session = await getServerSession(authOptions);
 
-  
-
-  // If session is not found or the email is not in the allowed list, redirect to login
   if (!session || !allowedEmails.includes(session.user?.email || "")) {
-    return redirect("/login");
+    redirect("/login");
   }
+
 
   return <AdminPanel />;
 }

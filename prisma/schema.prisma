@@ -6,6 +6,7 @@
 
 generator client {
   provider = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-1.0.x"]
 }
 
 datasource db {
@@ -25,6 +26,7 @@ model User {
   username       String?  
   profileImage   String?
   messagesLeft   Int      @default(20)
+  hasRecharged   Boolean   @default(false)
 
   accounts       Account[]
   sessions       Session[]

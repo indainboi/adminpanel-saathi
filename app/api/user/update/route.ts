@@ -1,7 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/authOptions";
 import { prisma } from '@/lib/prisma';
+import { allowedEmails } from "@/lib/constants";
 
 export async function POST(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  
+
+  if (!session || !allowedEmails.includes(session.user?.email || "")) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const { userId, messagesToAdd } = await req.json();
 
@@ -20,8 +30,11 @@ export async function POST(req: NextRequest) {
         messagesLeft: {
           increment: messagesToAdd,
         },
+        hasRecharged: true,
       },
     });
+
+    console.log("✅ User updated:", updatedUser ); 
 
     return NextResponse.json({
       message: `User upgraded with +${messagesToAdd} messages.`,
