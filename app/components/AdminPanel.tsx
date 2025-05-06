@@ -24,6 +24,8 @@ export default function AdminPanel() {
     fetchAllUsers();
   }, []);
 
+
+
   const logout = async () => {
     try {
       const res = await fetch("/api/logout", {
@@ -41,19 +43,19 @@ export default function AdminPanel() {
     }
   };
 
-  const searchUser = async () => {
-    setMessage("");
-    try {
-      const res = await fetch("/api/user", {
-        credentials: "include",
-      });
-      const data = await res.json();
-      setUsers([data.user]);
-      setCurrentPage(1);
-    } catch {
-      setMessage("❌ Failed to fetch user.");
-    }
-  };
+  function filterUsersByEmailOrName(input: string, users: any[]) {
+    if (!input.trim()) return users;
+  
+    const lowerInput = input.toLowerCase();
+    return users.filter(
+      (user) =>
+        user?.email?.toLowerCase().includes(lowerInput) ||
+        user?.name?.toLowerCase().includes(lowerInput)
+    );
+  }
+
+  const filteredUsers = filterUsersByEmailOrName(email, users);
+
 
   const upgradeUser = async (userId: string, tier: string) => {
     const messagesToAdd = tier === "bronze" ? 10 : tier === "silver" ? 50 : 100;
@@ -99,71 +101,74 @@ export default function AdminPanel() {
             onChange={(e) => setEmail(e.target.value)}
             className="w-full p-3 rounded-lg border"
           />
-          <button
-            onClick={searchUser}
-            className="w-full bg-indigo-600 text-white py-3 rounded-lg"
-          >
-            🔍 Search User
-          </button>
+          
         </div>
 
         {message && <div className="text-center text-sm">{message}</div>}
 
         <div className="mt-6 space-y-4 text-black">
-          {paginatedUsers.map((user) => (
-            <div
-              key={user.id}
-              className="p-4 rounded-lg border bg-white/90 space-y-2"
-            >
-              <h2 className="text-lg font-semibold">👤 {user.name}</h2>
-              <p>
-                <strong>Email:</strong> {user.email}
-              </p>
-              <p>
-                <strong>Tier:</strong> {user.tier}
-              </p>
-              <p>
-                <strong>Remaining:</strong> {user.messagesLeft}
-              </p>
-              <p>
-                <strong>Recharged:</strong>{" "}
-                <span
-                  className={
-                    user.hasRecharged
-                      ? "text-green-600 font-semibold"
-                      : "text-red-600 font-semibold"
-                  }
-                >
-                  {user.hasRecharged ? "✅ Yes" : "❌ No"}
-                </span>
-              </p>
-              <div className="flex gap-2">
-                {["bronze", "silver", "gold"].map((tier, i) => (
-                  <button
-                    key={tier}
-                    onClick={() =>
-                      setTierMap((prev) => ({ ...prev, [user.id]: tier }))
-                    }
-                    className={`px-3 py-1 rounded-full text-sm ${
-                      tierMap[user.id] === tier
-                        ? "bg-indigo-600 text-white"
-                        : "bg-gray-200"
-                    }`}
-                  >
-                    {tier} (+{[10, 50, 100][i]})
-                  </button>
-                ))}
-              </div>
-              <button
-                onClick={() =>
-                  upgradeUser(user.id, tierMap[user.id] || "bronze")
-                }
-                className="mt-2 w-full bg-green-600 text-white py-2 rounded-lg"
+          {filteredUsers.map((user, index) => {
+            if (!user || !user.id) return null;
+
+            return (
+              <div
+                key={user.id || index}
+                className="p-4 rounded-lg border bg-white/90 space-y-2"
               >
-                🚀 Confirm Upgrade
-              </button>
-            </div>
-          ))}
+                <h2 className="text-lg font-semibold">
+                  👤 {user.name || "Unnamed User"}
+                </h2>
+                <p>
+                  <strong>Email:</strong> {user.email || "N/A"}
+                </p>
+                <p>
+                  <strong>Tier:</strong> {user.tier || "N/A"}
+                </p>
+                <p>
+                  <strong>Remaining:</strong> {user.messagesLeft ?? "N/A"}
+                </p>
+                <p>
+                  <strong>Recharged:</strong>{" "}
+                  <span
+                    className={
+                      user.hasRecharged
+                        ? "text-green-600 font-semibold"
+                        : "text-red-600 font-semibold"
+                    }
+                  >
+                    {user.hasRecharged ? "✅ Yes" : "❌ No"}
+                  </span>
+                </p>
+
+                <div className="flex gap-2">
+                  {["bronze", "silver", "gold"].map((tier, i) => (
+                    <button
+                      key={tier}
+                      onClick={() =>
+                        setTierMap((prev) => ({ ...prev, [user.id]: tier }))
+                      }
+                      className={`px-3 py-1 rounded-full text-sm ${
+                        tierMap[user.id] === tier
+                          ? "bg-indigo-600 text-white"
+                          : "bg-gray-200"
+                      }`}
+                    >
+                      {tier} (+{[10, 50, 100][i]})
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() =>
+                    upgradeUser(user.id, tierMap[user.id] || "bronze")
+                  }
+                  className="mt-2 w-full bg-green-600 text-white py-2 rounded-lg"
+                >
+                  🚀 Confirm Upgrade
+                </button>
+              </div>
+            );
+          })}
         </div>
 
         {/* Pagination controls */}
