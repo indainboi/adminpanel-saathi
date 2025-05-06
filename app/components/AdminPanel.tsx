@@ -1,4 +1,3 @@
-// components/AdminPanel.tsx
 "use client";
 import { useState, useEffect } from "react";
 
@@ -7,12 +6,14 @@ export default function AdminPanel() {
   const [users, setUsers] = useState<any[]>([]);
   const [message, setMessage] = useState("");
   const [tierMap, setTierMap] = useState<Record<string, string>>({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const usersPerPage = 10;
 
   useEffect(() => {
     const fetchAllUsers = async () => {
       try {
         const res = await fetch("/api/user", {
-          credentials: "include", // ⬅️ add this
+          credentials: "include",
         });
         const data = await res.json();
         setUsers(data.users || []);
@@ -27,12 +28,11 @@ export default function AdminPanel() {
     try {
       const res = await fetch("/api/logout", {
         method: "POST",
-        credentials: "include", // Ensure the session is cleared
+        credentials: "include",
       });
       if (res.ok) {
         setMessage("✅ Successfully logged out.");
-        // Optionally, redirect to the login page or clear user data
-        window.location.href = "/login"; // Or replace with your redirect path
+        window.location.href = "/login";
       } else {
         setMessage("❌ Logout failed.");
       }
@@ -45,10 +45,11 @@ export default function AdminPanel() {
     setMessage("");
     try {
       const res = await fetch("/api/user", {
-        credentials: "include", // ⬅️ add this
+        credentials: "include",
       });
       const data = await res.json();
       setUsers([data.user]);
+      setCurrentPage(1);
     } catch {
       setMessage("❌ Failed to fetch user.");
     }
@@ -72,11 +73,16 @@ export default function AdminPanel() {
     }
   };
 
+  const paginatedUsers = users.slice(
+    (currentPage - 1) * usersPerPage,
+    currentPage * usersPerPage
+  );
+
   return (
     <main className="min-h-screen flex items-center justify-center bg-gradient-to-tr from-blue-100 to-violet-200 px-4">
       <button
         onClick={logout}
-        className="w-30 left-10 top-10 bg-red-600 text-white  rounded-lg  absolute  "
+        className="w-30 left-10 top-10 bg-red-600 text-white rounded-lg absolute"
       >
         Logout
       </button>
@@ -100,9 +106,11 @@ export default function AdminPanel() {
             🔍 Search User
           </button>
         </div>
+
         {message && <div className="text-center text-sm">{message}</div>}
+
         <div className="mt-6 space-y-4 text-black">
-          {users.map((user) => (
+          {paginatedUsers.map((user) => (
             <div
               key={user.id}
               className="p-4 rounded-lg border bg-white/90 space-y-2"
@@ -157,6 +165,35 @@ export default function AdminPanel() {
             </div>
           ))}
         </div>
+
+        {/* Pagination controls */}
+        {users.length > usersPerPage && (
+          <div className="flex justify-between mt-6 text-black">
+            <button
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="bg-gray-300 hover:bg-gray-400 text-black px-4 py-2 rounded disabled:opacity-50"
+            >
+              ◀️ Prev
+            </button>
+            <span className="text-sm text-gray-700 self-center">
+              Page {currentPage}
+            </span>
+            <button
+              onClick={() =>
+                setCurrentPage((prev) =>
+                  prev < Math.ceil(users.length / usersPerPage)
+                    ? prev + 1
+                    : prev
+                )
+              }
+              disabled={currentPage >= Math.ceil(users.length / usersPerPage)}
+              className="bg-gray-300 hover:bg-gray-400 text-black px-4 py-2 rounded disabled:opacity-50"
+            >
+              Next ▶️
+            </button>
+          </div>
+        )}
       </div>
     </main>
   );
