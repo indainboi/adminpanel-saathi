@@ -75,7 +75,7 @@ export default function AdminPanel() {
     }
   };
 
-  const paginatedUsers = users.slice(
+  const paginatedUsers = filteredUsers.slice(
     (currentPage - 1) * usersPerPage,
     currentPage * usersPerPage
   );
@@ -107,7 +107,7 @@ export default function AdminPanel() {
         {message && <div className="text-center text-sm">{message}</div>}
 
         <div className="mt-6 space-y-4 text-black">
-          {filteredUsers.map((user, index) => {
+          {paginatedUsers.map((user, index) => {
             if (!user || !user.id) return null;
 
             return (
