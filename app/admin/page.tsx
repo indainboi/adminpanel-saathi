@@ -1,9 +1,8 @@
-// app/admin/page.tsx
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/authOptions";
 import { redirect } from "next/navigation";
-import AdminPanel from "../components/AdminPanel"; // ✅ import the component
+import { authOptions } from "@/lib/authOptions";
 import { allowedEmails } from "@/lib/constants";
+import AdminDashboard from "./AdminDashboard";
 
 export default async function AdminPage() {
   const session = await getServerSession(authOptions);
@@ -12,6 +11,5 @@ export default async function AdminPage() {
     redirect("/login");
   }
 
-
-  return <AdminPanel />;
+  return <AdminDashboard />;
 }
